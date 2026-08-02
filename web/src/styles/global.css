@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  /* UI frame (dark chassis) */
+  --color-pine: #1A2E24;
+  --color-pine-light: #223B2E;
+  --color-pine-dark: #16261D;
+
+  /* Content surfaces (light cards) */
+  --color-parchment: #F5EFE6;
+  --color-parchment-warm: #EDE4D2;
+  --color-parchment-aged: #E8DCC8;
+
+  /* Semantic accents */
+  --color-gold: #D4AF37;
+  --color-gold-dark: #C8963E;
+  --color-sage: #7BA07E;
+  --color-sage-dark: #5C8A5E;
+  --color-terracotta: #C47452;
+  --color-sky: #7BA5C8;
+  --color-amethyst: #9B7EC4;
+
+  /* Typography */
+  --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-button: 999px;
+  --radius-modal: 16px;
+}
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-pine text-parchment font-sans antialiased;
+    overscroll-behavior: none;
+  }
+
+  h1, h2, h3 {
+    @apply font-serif;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-pine-dark);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-pine-light);
+    border-radius: 3px;
+  }
+}
+
+/* Component classes */
+@layer components {
+  .card {
+    @apply bg-parchment/95 text-pine-dark rounded-card shadow-lg;
+  }
+
+  .btn-primary {
+    @apply bg-sage text-pine-dark font-medium px-6 py-2.5 rounded-button
+           hover:bg-sage-dark active:scale-95 transition-all duration-150;
+  }
+
+  .btn-secondary {
+    @apply border border-parchment/30 text-parchment px-6 py-2.5 rounded-button
+           hover:bg-parchment/10 active:scale-95 transition-all duration-150;
+  }
+
+  .btn-icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-full
+           hover:bg-parchment/10 active:scale-90 transition-all duration-150;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 text-parchment/70 text-sm
+           hover:bg-parchment/10 hover:text-parchment rounded-lg transition-all cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-sage/20 text-sage font-medium;
+  }
+
+  .label {
+    @apply text-xs uppercase tracking-wider text-parchment/50 font-medium;
+  }
+
+  .value {
+    @apply text-parchment font-mono tabular-nums;
+  }
+
+  .resource-badge {
+    @apply flex items-center gap-1.5 bg-pine-light rounded-full px-3 py-1 text-sm;
+  }
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}

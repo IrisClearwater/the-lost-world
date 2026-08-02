@@ -1,0 +1,1 @@
+node_modules/\ndist/\n.env\n.env.local\n*.local\n.DS_Store\ntsconfig.tsbuildinfo\npnpm-workspace.yaml

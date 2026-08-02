@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/game/HexMap.tsx","./src/components/game/InspectorPanel.tsx","./src/components/layout/BottomDeck.tsx","./src/components/layout/TopBar.tsx","./src/state/playerStore.ts","./src/state/worldStore.ts"],"version":"5.8.3"}

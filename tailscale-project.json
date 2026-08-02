@@ -1,0 +1,11 @@
+{
+  "name": "the-lost-world",
+  "description": "The Lost World — single-player browser game. Discover, restore, and nurture a forgotten ecosystem.",
+  "serve": {
+    "port": 5199,
+    "command": "pnpm dev",
+    "health": "http://127.0.0.1:5199"
+  },
+  "notes": null,
+  "user_score": null
+}
