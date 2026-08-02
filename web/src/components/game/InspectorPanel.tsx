@@ -1,103 +1,115 @@
-import { useWorldStore } from '../../state/worldStore';
 import { usePlayerStore } from '../../state/playerStore';
+import { useWorldStore, type Zone } from '../../state/worldStore';
 
 interface Props {
+  zone: Zone;
   onClear: () => void;
 }
 
-export default function InspectorPanel({ onClear }: Props) {
-  const selectedZoneId = useWorldStore(s => s.selectedZoneId);
-  const zone = useWorldStore(s => s.zones.find(z => z.id === selectedZoneId));
+const stateLabels: Record<string, { label: string; color: string }> = {
+  dormant:   { label: 'Locked',    color: 'bg-parchment/10 text-parchment/30' },
+  overgrown: { label: 'Overgrown', color: 'bg-terracotta/80 text-parchment' },
+  restored:  { label: 'Restored',  color: 'bg-sage/80 text-parchment' },
+  thriving:  { label: 'Thriving',  color: 'bg-gold/80 text-pine-dark' },
+};
+
+export default function InspectorPanel({ zone, onClear }: Props) {
   const energy = usePlayerStore(s => s.energy);
-  const selectedHex = useWorldStore(s => s.selectedHex);
-
-  if (!zone) {
-    return (
-      <div className="p-4 h-full flex items-center justify-center">
-        <div className="text-center text-parchment/30">
-          <p className="text-4xl mb-2">🗺️</p>
-          <p className="text-sm">Select a zone to inspect</p>
-          {selectedHex && (
-            <p className="text-xs mt-2 text-parchment/20">
-              No zone at ({selectedHex.q}, {selectedHex.r})
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+  const { coins, harmony, materials } = zone.rewards;
   const canClear = zone.state === 'overgrown' && energy >= zone.clearCost;
   const canRestore = zone.state === 'restored' && energy >= zone.restoreCost;
-
-  const stateColours: Record<string, string> = {
-    dormant: 'bg-parchment/20 text-parchment/30',
-    overgrown: 'bg-terracotta/80 text-parchment',
-    restored: 'bg-sage/80 text-parchment',
-    thriving: 'bg-gold/80 text-pine-dark',
-  };
+  const st = stateLabels[zone.state];
 
   return (
-    <div className="p-4 space-y-4 animate-fade-in">
-      {/* Zone state badge */}
-      <div className="flex items-center gap-2">
-        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${stateColours[zone.state]}`}>
-          {zone.state.toUpperCase()}
+    <div className="p-5 space-y-5 animate-fade-in h-full overflow-y-auto">
+      {/* State badge + biome */}
+      <div className="flex items-center gap-2.5">
+        <span className={`text-[11px] px-3 py-1 rounded-full font-semibold tracking-wider ${st.color}`}>
+          {st.label}
         </span>
-        <span className="text-xs text-parchment/40">{zone.biome}</span>
+        <span className="text-xs text-parchment/30 tracking-wide">{zone.biome}</span>
       </div>
 
       {/* Zone name */}
-      <h2 className="font-serif text-xl text-parchment">{zone.name}</h2>
+      <h2 className="font-serif text-2xl text-parchment leading-tight">{zone.name}</h2>
 
       {/* Description */}
-      <p className="text-sm text-parchment/60 leading-relaxed">{zone.description}</p>
+      <p className="text-sm text-parchment/55 leading-relaxed">{zone.description}</p>
 
-      {/* Rewards */}
+      {/* Rewards card */}
       {zone.state !== 'dormant' && zone.state !== 'thriving' && (
-        <div className="card p-3 space-y-2">
-          <h3 className="label">Rewards</h3>
-          <div className="flex gap-3 text-sm">
-            <span>🪙 +{zone.rewards.coins}</span>
-            <span>✨ +{zone.rewards.harmony}</span>
-            <span>🧱 +{zone.rewards.materials}</span>
+        <div className="card p-4 space-y-3">
+          <span className="label">Rewards</span>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🪙</span>
+              <span className="font-mono tabular-nums text-pine-dark/80">+{coins}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">✨</span>
+              <span className="font-mono tabular-nums text-pine-dark/80">+{harmony}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🧱</span>
+              <span className="font-mono tabular-nums text-pine-dark/80">+{materials}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="space-y-2">
+      {/* Action buttons */}
+      <div className="space-y-2.5">
         {zone.state === 'overgrown' && (
-          <button onClick={onClear} disabled={!canClear}
-            className={`btn-primary w-full ${!canClear && 'opacity-40 cursor-not-allowed'}`}>
-            Clear Brambles ({zone.clearCost} 🍃)
-          </button>
+          <>
+            <button onClick={onClear} disabled={!canClear} className="btn-primary w-full">
+              <span className="flex items-center justify-center gap-2">
+                <span>Clear Brambles</span>
+                <span className="text-xs opacity-70">({zone.clearCost} 🍃)</span>
+              </span>
+            </button>
+            {!canClear && (
+              <p className="text-xs text-terracotta/70 text-center">
+                Not enough energy. Wait for regen.
+              </p>
+            )}
+          </>
         )}
+
         {zone.state === 'restored' && (
-          <button onClick={() => useWorldStore.getState().restoreZone(zone.id)}
+          <button
+            onClick={() => useWorldStore.getState().restoreZone(zone.id)}
             disabled={!canRestore}
-            className={`btn-primary w-full ${!canRestore && 'opacity-40 cursor-not-allowed'}`}>
-            Restore Zone ({zone.restoreCost} 🍃)
+            className="btn-primary w-full"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span>Restore Zone</span>
+              <span className="text-xs opacity-70">({zone.restoreCost} 🍃)</span>
+            </span>
           </button>
         )}
+
         {zone.state === 'dormant' && (
-          <p className="text-xs text-parchment/30 text-center">
-            Clear a neighbouring zone to unlock this area.
-          </p>
+          <div className="text-center py-6 space-y-2">
+            <span className="text-3xl">🔒</span>
+            <p className="text-xs text-parchment/25">Clear neighbouring zones to unlock.</p>
+          </div>
         )}
+
         {zone.state === 'thriving' && (
-          <div className="text-center">
-            <p className="text-sage text-sm">✦ Thriving ✦</p>
-            <p className="text-xs text-parchment/40 mt-1">This zone is fully restored.</p>
+          <div className="text-center py-6 space-y-2">
+            <span className="font-serif text-sage text-lg">✦ Thriving ✦</span>
+            <p className="text-xs text-parchment/30">This zone is fully restored.</p>
           </div>
         )}
       </div>
 
-      {/* Energy check */}
-      {(zone.state === 'overgrown' || zone.state === 'restored') && energy < zone.clearCost && (
-        <p className="text-xs text-terracotta text-center">
-          Not enough energy. Wait for regen or consume food.
-        </p>
+      {/* Energy warning */}
+      {energy < zone.clearCost && zone.state !== 'dormant' && zone.state !== 'thriving' && (
+        <div className="border border-terracotta/15 rounded-card p-3 text-center">
+          <p className="text-xs text-terracotta/60">
+            🍃 Low energy — wait for natural regen or consume food to restore.
+          </p>
+        </div>
       )}
     </div>
   );
