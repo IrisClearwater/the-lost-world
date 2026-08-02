@@ -4,13 +4,6 @@ interface Props {
   onSelectZone: (zone: Zone) => void;
 }
 
-const zonePositions: Record<string, { top: string; left: string; width: string; height: string }> = {
-  clearing:  { top: '38%', left: '28%', width: '44%', height: '42%' },
-  thicket:   { top: '12%', left: '8%',  width: '38%', height: '35%' },
-  grove:     { top: '58%', left: '12%', width: '40%', height: '38%' },
-  meadow:    { top: '20%', left: '52%', width: '40%', height: '55%' },
-};
-
 const zoneArt: Record<string, string> = {
   clearing: '/zones/clearing.png',
   thicket:  '/zones/thicket.png',
@@ -18,88 +11,120 @@ const zoneArt: Record<string, string> = {
   meadow:   '/zones/meadow.png',
 };
 
+const zoneGrid: { id: string; row: number; col: number }[] = [
+  { id: 'thicket',  row: 1, col: 1 },
+  { id: 'clearing', row: 1, col: 2 },
+  { id: 'grove',    row: 2, col: 1 },
+  { id: 'meadow',   row: 2, col: 2 },
+];
+
 export default function SceneView({ onSelectZone }: Props) {
   const zones = useWorldStore(s => s.zones);
   const selectedZoneId = useWorldStore(s => s.selectedZoneId);
 
-  // Find the zone whose art to show as background (selected or first restored/overgrown)
-  const activeZone = zones.find(z => z.id === selectedZoneId)
-    || zones.find(z => z.state !== 'dormant')
-    || zones[0];
-
-  const bgArt = zoneArt[activeZone?.id] || zoneArt.clearing;
-
   return (
-    <div className="relative w-full h-full overflow-hidden bg-pine-dark">
-      {/* Background scene art */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-        style={{ backgroundImage: `url(${bgArt})` }}
-      />
+    <div className="w-full h-full bg-pine-dark overflow-hidden">
+      {/* 2x2 zone mosaic */}
+      <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 p-1">
+        {zoneGrid.map(({ id }) => {
+          const zone = zones.find(z => z.id === id);
+          if (!zone) return null;
+          const art = zoneArt[id];
+          const isSelected = zone.id === selectedZoneId;
+          const isDormant = zone.state === 'dormant';
+          const isOvergrown = zone.state === 'overgrown';
+          const isRestored = zone.state === 'restored';
+          const isThriving = zone.state === 'thriving';
 
-      {/* Dark vignette overlay for atmosphere */}
-      <div className="absolute inset-0 bg-gradient-to-t from-pine-dark/60 via-transparent to-pine-dark/30 pointer-events-none" />
+          return (
+            <button
+              key={id}
+              onClick={() => onSelectZone(zone)}
+              disabled={isDormant}
+              className="relative overflow-hidden group"
+            >
+              {/* Zone art background — always visible underneath */}
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                style={{ backgroundImage: `url(${art})` }}
+              />
 
-      {/* Interactive zone hotspots */}
-      {zones.map(zone => {
-        const pos = zonePositions[zone.id];
-        if (!pos || zone.state === 'dormant') return null;
-        const isSelected = zone.id === selectedZoneId;
-        const isActive = zone.state === 'overgrown' || zone.state === 'restored';
+              {/* State overlays */}
+              {isDormant && <DormantOverlay />}
+              {isOvergrown && <OvergrownOverlay name={zone.name} />}
+              {isRestored && <RestoredOverlay name={zone.name} />}
+              {isThriving && <ThrivingOverlay name={zone.name} />}
 
-        return (
-          <button
-            key={zone.id}
-            onClick={() => onSelectZone(zone)}
-            className="absolute transition-all duration-300 group"
-            style={{ top: pos.top, left: pos.left, width: pos.width, height: pos.height }}
-          >
-            {/* Hotspot outline */}
-            <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300
-              ${isSelected
-                ? 'border-gold bg-gold/10 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
-                : isActive
-                  ? 'border-sage/40 bg-sage/5 hover:border-sage/70 hover:bg-sage/10'
-                  : 'border-parchment/10 hover:border-parchment/30'
-              }`}
-            />
-
-            {/* Zone label */}
-            <div className={`absolute bottom-2 left-2 right-2 text-center transition-all duration-300
-              ${isSelected ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}>
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm
-                ${isSelected ? 'bg-gold/80 text-pine-dark' : 'bg-pine-dark/70 text-parchment'}`}>
-                {zone.name}
-              </span>
-            </div>
-
-            {/* State indicator dot */}
-            {zone.state === 'overgrown' && (
-              <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-terracotta shadow-[0_0_6px_rgba(196,116,82,0.6)]" />
-            )}
-            {zone.state === 'thriving' && (
-              <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-gold shadow-[0_0_6px_rgba(212,175,55,0.6)]" />
-            )}
-          </button>
-        );
-      })}
-
-      {/* Zone indicator dots at bottom */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-        {zones.map(zone => (
-          <button
-            key={zone.id}
-            onClick={() => onSelectZone(zone)}
-            className={`w-2 h-2 rounded-full transition-all duration-300
-              ${zone.id === selectedZoneId
-                ? 'bg-gold w-4'
-                : zone.state === 'dormant'
-                  ? 'bg-parchment/15'
-                  : 'bg-parchment/40 hover:bg-parchment/60'
-              }`}
-          />
-        ))}
+              {/* Selection border */}
+              {isSelected && (
+                <div className="absolute inset-0 border-2 border-gold shadow-[inset_0_0_30px_rgba(212,175,55,0.2)] z-10 pointer-events-none" />
+              )}
+            </button>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function DormantOverlay() {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-pine-dark/90 backdrop-blur-sm">
+      <span className="text-3xl mb-1">🔒</span>
+      <span className="text-parchment/20 text-xs font-medium tracking-wider">LOCKED</span>
+      <span className="text-parchment/10 text-[10px] mt-1">Clear a neighbouring zone</span>
+    </div>
+  );
+}
+
+function OvergrownOverlay({ name }: { name: string }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-4 pointer-events-none">
+      {/* Dark vignette */}
+      <div className="absolute inset-0 bg-gradient-to-t from-pine-dark/80 via-pine-dark/30 to-transparent" />
+      {/* Bramble edge vignette */}
+      <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-terracotta/40 shadow-[inset_0_0_40px_rgba(196,116,82,0.15)]" />
+      {/* Label */}
+      <span className="relative z-20 text-parchment/90 font-serif text-sm md:text-base font-semibold drop-shadow-lg">
+        {name}
+      </span>
+      <span className="relative z-20 text-terracotta/80 text-[10px] tracking-wider mt-0.5">
+        NEEDS CLEARING
+      </span>
+      {/* Pulsing dot */}
+      <div className="absolute top-3 right-3 z-20">
+        <div className="w-2.5 h-2.5 rounded-full bg-terracotta animate-pulse shadow-[0_0_8px_rgba(196,116,82,0.6)]" />
+      </div>
+    </div>
+  );
+}
+
+function RestoredOverlay({ name }: { name: string }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-4 pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-t from-pine-dark/40 via-transparent to-transparent" />
+      <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-sage/40" />
+      <span className="relative z-20 text-parchment/90 font-serif text-sm md:text-base font-semibold drop-shadow-lg">
+        {name}
+      </span>
+      <span className="relative z-20 text-sage text-[10px] tracking-wider mt-0.5">
+        RESTORED
+      </span>
+    </div>
+  );
+}
+
+function ThrivingOverlay({ name }: { name: string }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-4 pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-t from-pine-dark/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-gold/60 shadow-[inset_0_0_30px_rgba(212,175,55,0.1)]" />
+      <span className="relative z-20 text-gold font-serif text-sm md:text-base font-semibold drop-shadow-lg">
+        ✦ {name} ✦
+      </span>
+      <span className="relative z-20 text-gold/60 text-[10px] tracking-wider mt-0.5">
+        THRIVING
+      </span>
     </div>
   );
 }
